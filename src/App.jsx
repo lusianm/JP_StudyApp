@@ -1,8 +1,8 @@
-import InstallButton from './components/InstallButton'
 import { useState, useEffect } from 'react'
 import Home from './components/Home'
 import WordTable from './components/WordTable'
 import QuizMode from './components/QuizMode'
+import InstallButton from './components/InstallButton'
 import { loadCategories, loadWords } from './utils/csvLoader'
 import { getStorage, setStorage } from './utils/storage'
 
@@ -24,7 +24,6 @@ export default function App() {
     const init = async () => {
       const cats = await loadCategories()
       setCategories(cats)
-
       const wordsMap = {}
       for (const cat of cats) {
         const words = await loadWords(cat.id, cat.name)
@@ -33,6 +32,33 @@ export default function App() {
       setAllWords(wordsMap)
     }
     init()
+  }, [])
+
+  // 뒤로가기 버튼 연동
+  useEffect(() => {
+    const handlePopState = (e) => {
+      const state = e.state
+      if (!state) {
+        setCurrentView('home')
+        setSelectedCategory(null)
+        setQuizConfig(null)
+      } else if (state.view === 'home') {
+        setCurrentView('home')
+        setSelectedCategory(null)
+        setQuizConfig(null)
+      } else if (state.view === 'table') {
+        setCurrentView('table')
+        setSelectedCategory(state.category)
+        setQuizConfig(null)
+      } else if (state.view === 'quiz') {
+        setCurrentView('quiz')
+        setSelectedCategory(state.category)
+        setQuizConfig(state.quizConfig)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
   const checks = getStorage('wordChecks', {})
@@ -56,22 +82,26 @@ export default function App() {
   }
 
   const goHome = () => {
+    window.history.pushState({ view: 'home' }, '')
     setCurrentView('home')
     setSelectedCategory(null)
     setQuizConfig(null)
   }
 
   const openTable = (cat) => {
+    window.history.pushState({ view: 'table', category: cat }, '')
     setSelectedCategory(cat)
     setCurrentView('table')
   }
 
   const openQuiz = (cat, config) => {
+    window.history.pushState({ view: 'quiz', category: cat, quizConfig: config }, '')
     setSelectedCategory(cat)
     setQuizConfig(config)
     setCurrentView('quiz')
   }
-return (
+
+  return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
       {currentView === 'home' && (
         <Home
@@ -104,12 +134,14 @@ return (
           words={getWordsWithChecks(selectedCategory?.id)}
           config={quizConfig}
           onCheck={handleCheck}
-          onBack={() => setCurrentView('table')}
+          onBack={() => {
+            window.history.pushState({ view: 'table', category: selectedCategory }, '')
+            setCurrentView('table')
+          }}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
         />
       )}
-      {/* 설치 버튼 추가 */}
       <InstallButton />
     </div>
   )
