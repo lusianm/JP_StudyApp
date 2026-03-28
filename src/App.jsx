@@ -1,3 +1,4 @@
+import InstallButton from './components/InstallButton'
 import { useState, useEffect } from 'react'
 import Home from './components/Home'
 import WordTable from './components/WordTable'
@@ -70,8 +71,7 @@ export default function App() {
     setQuizConfig(config)
     setCurrentView('quiz')
   }
-
-  return (
+return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
       {currentView === 'home' && (
         <Home
@@ -109,6 +109,8 @@ export default function App() {
           setDarkMode={setDarkMode}
         />
       )}
+      {/* 설치 버튼 추가 */}
+      <InstallButton />
     </div>
   )
 }
