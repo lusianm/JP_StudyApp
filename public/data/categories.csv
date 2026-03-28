@@ -1,3 +1,5 @@
 id,name,order
-cat_1,words1,1
-cat_2,words2,2
+cat_0,hiragana,0
+cat_1,katakana,1
+cat_2,words1,2
+cat_3,words2,3
