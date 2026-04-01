@@ -14,6 +14,8 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [quizConfig, setQuizConfig] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  // checks를 useState로 관리
+  const [checks, setChecks] = useState(() => getStorage('wordChecks', {}))
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -61,8 +63,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  const checks = getStorage('wordChecks', {})
-
   const getWordsWithChecks = (catId) => {
     const words = allWords[catId] || []
     return words.map(w => ({
@@ -78,7 +78,8 @@ export default function App() {
       [wordId]: { ...checks[wordId], [field]: value }
     }
     setStorage('wordChecks', updated)
-    setAllWords(prev => ({ ...prev }))
+    // checks 상태 업데이트 → 리렌더링 트리거
+    setChecks(updated)
   }
 
   const goHome = () => {
