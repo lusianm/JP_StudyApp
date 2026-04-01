@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { ArrowLeft, Sun, Moon, Star, Check, RotateCcw } from 'lucide-react'
 
 function shuffle(arr) {
@@ -23,7 +23,28 @@ export default function QuizMode({
   const [revealed, setRevealed] = useState(false)
   const [finished, setFinished] = useState(false)
 
-  const current = quizWords[index]
+  // 퀴즈 내에서 실시간으로 체크 상태 관리
+  const [localChecks, setLocalChecks] = useState({})
+
+  const handleCheck = useCallback((wordId, field, value) => {
+    // 부모 컴포넌트(localStorage)에도 저장
+    onCheck(wordId, field, value)
+    // 로컬 상태도 즉시 업데이트
+    setLocalChecks(prev => ({
+      ...prev,
+      [wordId]: { ...prev[wordId], [field]: value }
+    }))
+  }, [onCheck])
+
+  // 현재 단어의 체크 상태 (로컬 우선, 없으면 words에서 가져옴)
+  const getWordState = (word) => {
+    if (!word) return {}
+    return {
+      ...word,
+      isMemorized: localChecks[word.id]?.isMemorized ?? word.isMemorized,
+      isFavorite: localChecks[word.id]?.isFavorite ?? word.isFavorite,
+    }
+  }
 
   const handleNext = () => {
     if (index + 1 >= quizWords.length) {
@@ -38,6 +59,7 @@ export default function QuizMode({
     setIndex(0)
     setRevealed(false)
     setFinished(false)
+    setLocalChecks({})
   }
 
   if (quizWords.length === 0) {
@@ -83,8 +105,11 @@ export default function QuizMode({
     )
   }
 
+  const current = getWordState(quizWords[index])
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* 헤더 */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           <ArrowLeft size={20} />
@@ -96,6 +121,7 @@ export default function QuizMode({
         </button>
       </div>
 
+      {/* 진행 바 */}
       <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mb-8">
         <div
           className="bg-blue-500 h-1.5 rounded-full transition-all"
@@ -103,12 +129,14 @@ export default function QuizMode({
         />
       </div>
 
+      {/* 모드 뱃지 */}
       <div className="flex justify-center mb-6">
         <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
           {mode === 'kanji' ? '한자를 보고 뜻/음 맞추기' : '뜻/음을 보고 한자 맞추기'}
         </span>
       </div>
 
+      {/* 카드 */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700
                       p-8 mb-6 min-h-[260px] flex flex-col items-center justify-center text-center shadow-sm">
         {mode === 'kanji' ? (
@@ -134,6 +162,7 @@ export default function QuizMode({
         )}
       </div>
 
+      {/* 액션 버튼 */}
       <div className="space-y-3">
         {!revealed ? (
           <button
@@ -144,8 +173,9 @@ export default function QuizMode({
           </button>
         ) : (
           <div className="flex gap-3">
+            {/* 즐겨찾기 */}
             <button
-              onClick={() => onCheck(current.id, 'isFavorite', !current.isFavorite)}
+              onClick={() => handleCheck(current.id, 'isFavorite', !current.isFavorite)}
               className={`p-4 rounded-2xl border-2 transition
                 ${current.isFavorite
                   ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
@@ -154,8 +184,9 @@ export default function QuizMode({
               <Star size={22} className={current.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'} />
             </button>
 
+            {/* 암기 체크 */}
             <button
-              onClick={() => onCheck(current.id, 'isMemorized', !current.isMemorized)}
+              onClick={() => handleCheck(current.id, 'isMemorized', !current.isMemorized)}
               className={`p-4 rounded-2xl border-2 transition
                 ${current.isMemorized
                   ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
@@ -164,6 +195,7 @@ export default function QuizMode({
               <Check size={22} className={current.isMemorized ? 'text-green-500' : 'text-gray-400'} />
             </button>
 
+            {/* 다음 */}
             <button
               onClick={handleNext}
               className="flex-1 py-4 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-semibold text-lg transition"
@@ -174,7 +206,8 @@ export default function QuizMode({
         )}
       </div>
 
-      <div className="flex justify-center gap-4 mt-4 text-sm text-gray-400">
+      {/* 현재 단어 상태 표시 */}
+      <div className="flex justify-center gap-4 mt-4 text-sm">
         {current.isMemorized && <span className="text-green-500">✓ 암기 완료</span>}
         {current.isFavorite && <span className="text-yellow-400">⭐ 즐겨찾기</span>}
       </div>
